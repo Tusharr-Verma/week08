@@ -16,11 +16,9 @@ on:
 
 # Define global environment variables that can be used across jobs
 env:
-  # ACR Login Server (e.g., myregistry.azurecr.io)
-  # This needs to be set as a GitHub Repository Secret
-  ACR_LOGIN_SERVER: ${{ secrets.AZURE_CONTAINER_REGISTRY }}
+  # ACR Login Server (full login server URL)
+  ACR_LOGIN_SERVER: tushar0402.azurecr.io
   # Dynamically generate image tags based on Git SHA and GitHub Run ID
-  # This provides unique, traceable tags for each image build
   IMAGE_TAG: ${{ github.sha }}-${{ github.run_id }}
 
 jobs:
@@ -39,7 +37,8 @@ jobs:
 
     # Login to Azure Container Registry (ACR)
     - name: Login to Azure Container Registry
-      run: az acr login --name ${{ env.ACR_LOGIN_SERVER }}
+      # Hardcoded registry name to avoid empty variable issues
+      run: az acr login --name tushar0402
 
     # Build and Push Docker image for Frontend
     - name: Build and Push Frontend Image
