@@ -2,6 +2,8 @@
 
 name: CD - Deploy Frontend to AKS
 
+# This workflow can be called by other workflows and takes inputs.
+# Or it can be run manually if you provide the IPs.
 on:
   workflow_dispatch:
     inputs:
@@ -20,7 +22,7 @@ on:
       aks_resource_group:
         description: 'Resource Group of the AKS Cluster'
         required: true
-        default: '<<resource_group_name>'
+        default: '<resource_group_name>'
 
   workflow_call:
     inputs:
@@ -52,7 +54,7 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # Login to Azure Container Registry (ACR) - HARD CODED
+      # Login to Azure Container Registry (ACR) - hardcoded to tushar0402
       - name: Login to Azure Container Registry
         run: az acr login --name tushar0402
 
@@ -61,6 +63,8 @@ jobs:
           echo "Injecting IPs into frontend/main.js"
           sed -i "s|_PRODUCT_API_URL_|${{ inputs.product_api_ip }}|g" frontend/main.js
           sed -i "s|_ORDER_API_URL_|${{ inputs.order_api_ip }}|g" frontend/main.js
+          
+          # Display the modified file content for debugging
           echo "--- Modified main.js content ---"
           cat frontend/main.js
           echo "---------------------------------"
@@ -68,20 +72,23 @@ jobs:
       # Build and Push Docker image for Frontend
       - name: Build and Push Frontend Image
         run: |
-          docker build -t tushar0402/frontend:latest ./frontend/
-          docker push tushar0402/frontend:latest
+          docker build -t tushar0402.azurecr.io/frontend:latest ./frontend/
+          docker push tushar0402.azurecr.io/frontend:latest
 
-      - name: Set Kubernetes context (get AKS credentials)
+      # Set Kubernetes context (get AKS credentials)
+      - name: Set Kubernetes context
         uses: azure/aks-set-context@v3
         with:
           resource-group: ${{ inputs.aks_resource_group }}
           cluster-name: ${{ inputs.aks_cluster_name }}
 
+      # Deploy Frontend to AKS
       - name: Deploy Frontend to AKS
         run: |
           echo "Deploying frontend with latest tag to AKS cluster: ${{ inputs.aks_cluster_name }}"
           cd k8s/
           kubectl apply -f frontend.yaml
 
-      - name: Logout from Azure (AKS deployment)
+      # Logout from Azure (AKS deployment)
+      - name: Logout from Azure
         run: az logout
