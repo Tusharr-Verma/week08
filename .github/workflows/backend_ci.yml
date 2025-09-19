@@ -18,11 +18,9 @@ on:
 
 # Define global environment variables that can be used across jobs
 env:
-  # ACR Login Server (e.g., myregistry.azurecr.io)
-  # This needs to be set as a GitHub Repository Secret
-  ACR_LOGIN_SERVER: ${{ secrets.AZURE_CONTAINER_REGISTRY }}
+  # ACR Login Server (full login server URL, e.g., myregistry.azurecr.io)
+  ACR_LOGIN_SERVER: tushar0402.azurecr.io
   # Dynamically generate image tags based on Git SHA and GitHub Run ID
-  # This provides unique, traceable tags for each image build
   IMAGE_TAG: ${{ github.sha }}-${{ github.run_id }}
 
 jobs:
@@ -38,7 +36,6 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: products
-        # Make pg_isready available so the service is healthy before tests run
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 10s
@@ -65,24 +62,22 @@ jobs:
     steps:
       # 1. Checkout the repository code to the runner
       - name: Checkout repository
-        uses: actions/checkout@v4 # Action to check out your repository code
+        uses: actions/checkout@v4
 
       # 2. Set up Python environment
       - name: Set up Python 3.10
-        uses: actions/setup-python@v5 # Action to set up Python environment
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
       # 3. Install dependencies and run code quality checks
       - name: Install dependencies
-        run: | # Use a multi-line script to install pip dependencies
+        run: |
           pip install --upgrade pip
-          # Loop through each backend service folder
           for req in backend/*/requirements.txt; do
             echo "Installing $req"
             pip install -r "$req"
           done
-          # Install CI tools
           pip install pytest httpx
 
       # 5. Run tests for product service
@@ -122,11 +117,12 @@ jobs:
     - name: Azure Login
       uses: azure/login@v1
       with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }} # Needs to be set as a GitHub Secret (Service Principal JSON)
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
 
     # Login to Azure Container Registry (ACR)
     - name: Login to Azure Container Registry
-      run: az acr login --name ${{ env.ACR_LOGIN_SERVER }}
+      # Hardcoded registry name to avoid empty variable issues
+      run: az acr login --name tushar0402
 
     # Build and Push Docker image for Product Service
     - name: Build and Push Product Service Image
