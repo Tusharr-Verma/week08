@@ -141,6 +141,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Event Listeners ---
 
+    // Product Form Submission
+    productForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('product-name').value;
+        const description = document.getElementById('product-description').value;
+        const price = parseFloat(document.getElementById('product-price').value);
+        const stock_quantity = parseInt(document.getElementById('product-stock').value);
+
+        const productData = { name, description, price, stock_quantity };
+
+        try {
+            const response = await fetch(`${PRODUCT_API_BASE_URL}/products/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(productData)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Failed to add product');
+            }
+
+            showMessage('Product added successfully!', 'success');
+            productForm.reset();
+            fetchProducts();
+
+        } catch (err) {
+            console.error(err);
+            showMessage(err.message, 'error');
+        }
+    });
+
     // Add to Cart
     productListDiv.addEventListener('click', e => {
         if (e.target.classList.contains('add-to-cart-btn')) {
@@ -168,7 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 if (!response.ok) throw new Error('Image upload failed');
                 showMessage('Image uploaded successfully!', 'success');
-                fetchProducts(); // Refresh product list
+                fetchProducts();
             } catch (err) {
                 console.error(err);
                 showMessage(err.message, 'error');
