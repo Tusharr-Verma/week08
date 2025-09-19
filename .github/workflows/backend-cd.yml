@@ -47,6 +47,7 @@ jobs:
         run: |
           echo "Deploying backend infrastructure..."
           cd k8s/
+          # Ensure namespace exists (optional)
           kubectl apply -f configmaps.yaml
           kubectl apply -f secrets.yaml
           kubectl apply -f product-db.yaml
@@ -84,8 +85,7 @@ jobs:
             exit 1 # Fail the job if IPs are not obtained
           fi
           
-          # These are environment variables for subsequent steps in the *same job*
-          # And used to set the job outputs
+          # Export environment variables for subsequent steps
           echo "PRODUCT_IP=$PRODUCT_IP" >> $GITHUB_ENV
           echo "ORDER_IP=$ORDER_IP" >> $GITHUB_ENV
 
