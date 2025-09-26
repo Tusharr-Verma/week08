@@ -76,7 +76,7 @@ jobs:
         run: kubectl apply -f k8s/frontend.yaml
 
       - name: Wait for rollout
-        run: kubectl rollout status deployment/frontend-w08e1
+        run: kubectl rollout status deployment/frontend
 
       - name: Logout from Azure
         run: az logout
