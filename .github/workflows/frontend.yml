@@ -70,7 +70,7 @@ jobs:
 
       - name: Patch frontend deployment with new image
         run: |
-          sed -i "s|image: .*$|image: ${{ env.ACR_LOGIN_SERVER }}/frontend:${{ needs.build-and-test.outputs.image-tag }}|" k8s/frontend.yaml
+          sed -i "s|image: .*$|image: \"${{ env.ACR_LOGIN_SERVER }}/frontend:${{ needs.build-and-test.outputs.image-tag }}\"|" k8s/frontend.yaml
 
       - name: Deploy frontend
         run: kubectl apply -f k8s/frontend.yaml
