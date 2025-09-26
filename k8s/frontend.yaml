@@ -17,11 +17,13 @@ spec:
         app: frontend
     spec:
       containers:
-      - name: frontend-container
-        image: tushar0402.azurecr.io/frontend:latest
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 80
+        - name: frontend-container
+          # Image will be patched by GitHub Actions workflow
+          image: tushar0402.azurecr.io/frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+
 ---
 apiVersion: v1
 kind: Service
