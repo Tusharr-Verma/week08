@@ -1,0 +1,78 @@
+# week08/.github/workflows/frontend.yml
+name: Frontend CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - development
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend.yml'
+  pull_request:
+    branches:
+      - main
+      - development
+  workflow_dispatch:
+
+env:
+  ACR_LOGIN_SERVER: tushar0402.azurecr.io
+  IMAGE_TAG: ${{ github.sha }}-${{ github.run_id }}
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Build and push frontend Docker image
+        run: |
+          docker build -t ${{ env.ACR_LOGIN_SERVER }}/frontend:${{ env.IMAGE_TAG }} ./frontend/
+          docker push ${{ env.ACR_LOGIN_SERVER }}/frontend:${{ env.IMAGE_TAG }}
+
+      - name: Set output image tag
+        id: set-tag
+        run: echo "image-tag=${{ env.IMAGE_TAG }}" >> $GITHUB_OUTPUT
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set AKS context
+        uses: azure/aks-set-context@v3
+        with:
+          resource-group: <resource_group>
+          cluster-name: <aks_cluster_name>
+
+      - name: Inject backend IPs
+        run: |
+          sed -i "s|_PRODUCT_API_URL_|${{ inputs.product_api_ip }}|g" frontend/main.js
+          sed -i "s|_ORDER_API_URL_|${{ inputs.order_api_ip }}|g" frontend/main.js
+
+      - name: Patch frontend deployment with new image
+        run: |
+          sed -i "s|image: .*$|image: ${{ env.ACR_LOGIN_SERVER }}/frontend:${{ needs.build-and-test.outputs.image-tag }}|" k8s/frontend.yaml
+
+      - name: Deploy frontend
+        run: kubectl apply -f k8s/frontend.yaml
+
+      - name: Wait for rollout
+        run: kubectl rollout status deployment/frontend-w08e1
+
+      - name: Logout from Azure
+        run: az logout
