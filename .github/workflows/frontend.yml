@@ -68,15 +68,19 @@ jobs:
           sed -i "s|_PRODUCT_API_URL_|${{ inputs.product_api_ip }}|g" frontend/main.js
           sed -i "s|_ORDER_API_URL_|${{ inputs.order_api_ip }}|g" frontend/main.js
 
-      - name: Patch frontend deployment with new image
+      - name: Patch frontend deployment with new image and clean old Pods
         run: |
-          sed -i "s|image: .*$|image: \"${{ env.ACR_LOGIN_SERVER }}/frontend:${{ needs.build-and-test.outputs.image-tag }}\"|" k8s/frontend.yaml
+          # Update deployment with the new image tag
+          kubectl set image deployment/frontend frontend-container=${{ env.ACR_LOGIN_SERVER }}/frontend:${{ needs.build-and-test.outputs.image-tag }}
+
+          # Delete any old or stuck frontend Pods to avoid rollout hang
+          kubectl delete pod -l app=frontend --grace-period=0 --force || true
 
       - name: Deploy frontend
         run: kubectl apply -f k8s/frontend.yaml
 
       - name: Wait for rollout
-        run: kubectl rollout status deployment/frontend
+        run: kubectl rollout status deployment/frontend --timeout=180s
 
       - name: Logout from Azure
         run: az logout
